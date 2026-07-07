@@ -1,14 +1,21 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.core.enums import CheckStatus, IncidentStatus
+from app.core.enums import CheckStatus, IncidentStatus, NotificationEventType
 from app.db.models.check_run import CheckRun
 from app.db.models.incident import Incident
 from app.db.models.monitoring_target import MonitoringTarget
 from app.repositories.incident_repository import IncidentRepository
+
+
+@dataclass(slots=True)
+class IncidentTransition:
+    incident: Incident
+    event_type: NotificationEventType
 
 
 class IncidentService:
@@ -20,7 +27,7 @@ class IncidentService:
         session: AsyncSession,
         target: MonitoringTarget,
         check_run: CheckRun,
-    ) -> None:
+    ) -> IncidentTransition | None:
         repository = IncidentRepository(session)
         open_incident = await repository.get_open_by_target(target.id)
 
@@ -32,7 +39,11 @@ class IncidentService:
                 if target.consecutive_successes >= self.settings.successes_to_resolve_incident:
                     open_incident.status = IncidentStatus.RESOLVED
                     open_incident.resolved_at = datetime.now(UTC)
-            return
+                    return IncidentTransition(
+                        incident=open_incident,
+                        event_type=NotificationEventType.INCIDENT_RESOLVED,
+                    )
+            return None
 
         target.consecutive_failures += 1
         target.consecutive_successes = 0
@@ -41,30 +52,36 @@ class IncidentService:
             open_incident.last_failure_run_id = check_run.id
             open_incident.consecutive_failures = target.consecutive_failures
             open_incident.consecutive_successes = 0
-            return
+            return None
 
-        if target.consecutive_failures >= self.settings.failures_to_open_incident:
-            recent_failures_statement = (
-                select(CheckRun)
-                .where(
-                    CheckRun.target_id == target.id,
-                    CheckRun.status != CheckStatus.HEALTHY,
-                )
-                .order_by(CheckRun.started_at.desc())
-                .limit(target.consecutive_failures)
-            )
-            recent_failures_result = await session.scalars(recent_failures_statement)
-            recent_failures = list(recent_failures_result.all())
-            first_failure = recent_failures[-1] if recent_failures else check_run
+        if target.consecutive_failures < self.settings.failures_to_open_incident:
+            return None
 
-            incident = Incident(
-                target_id=target.id,
-                status=IncidentStatus.OPEN,
-                started_at=first_failure.started_at,
-                first_failure_run_id=first_failure.id,
-                last_failure_run_id=check_run.id,
-                consecutive_failures=target.consecutive_failures,
-                consecutive_successes=0,
-                summary=f"{target.name} failed {target.consecutive_failures} consecutive checks.",
+        recent_failures_statement = (
+            select(CheckRun)
+            .where(
+                CheckRun.target_id == target.id,
+                CheckRun.status != CheckStatus.HEALTHY,
             )
-            await repository.create(incident)
+            .order_by(CheckRun.started_at.desc())
+            .limit(target.consecutive_failures)
+        )
+        recent_failures_result = await session.scalars(recent_failures_statement)
+        recent_failures = list(recent_failures_result.all())
+        first_failure = recent_failures[-1] if recent_failures else check_run
+
+        incident = Incident(
+            target_id=target.id,
+            status=IncidentStatus.OPEN,
+            started_at=first_failure.started_at,
+            first_failure_run_id=first_failure.id,
+            last_failure_run_id=check_run.id,
+            consecutive_failures=target.consecutive_failures,
+            consecutive_successes=0,
+            summary=f"{target.name} failed {target.consecutive_failures} consecutive checks.",
+        )
+        await repository.create(incident)
+        return IncidentTransition(
+            incident=incident,
+            event_type=NotificationEventType.INCIDENT_OPENED,
+        )

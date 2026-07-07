@@ -38,3 +38,17 @@ class IncidentStatus(StrEnum):
     OPEN = "open"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
+
+
+class NotificationEventType(StrEnum):
+    INCIDENT_OPENED = "incident_opened"
+    INCIDENT_RESOLVED = "incident_resolved"
+
+
+class NotificationChannel(StrEnum):
+    DISCORD = "discord"
+
+
+class NotificationStatus(StrEnum):
+    SENT = "sent"
+    FAILED = "failed"

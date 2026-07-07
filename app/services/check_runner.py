@@ -14,6 +14,7 @@ from app.repositories.check_run_repository import CheckRunRepository
 from app.repositories.monitoring_target_repository import MonitoringTargetRepository
 from app.services.http_checker import HttpChecker
 from app.services.incident_service import IncidentService
+from app.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class CheckRunner:
         self.settings = settings or get_settings()
         self.http_checker = HttpChecker(self.settings)
         self.incident_service = IncidentService(self.settings)
+        self.notification_service = NotificationService(self.settings)
 
     async def run_target(
         self,
@@ -51,9 +53,21 @@ class CheckRunner:
         target.last_checked_at = result.finished_at
         target.next_check_at = result.finished_at + timedelta(minutes=target.interval_minutes)
 
-        await self.incident_service.apply_check_result(session, target, check_run)
+        transition = await self.incident_service.apply_check_result(session, target, check_run)
+
+        # The check and incident state are committed first. A Discord outage must never
+        # roll back monitoring data or prevent future checks from running.
         await session.commit()
         await session.refresh(check_run)
+
+        if transition is not None:
+            await self.notification_service.notify_incident_transition(
+                session,
+                target,
+                check_run,
+                transition,
+            )
+
         return check_run
 
     async def run_due_targets(self) -> dict[str, int]:

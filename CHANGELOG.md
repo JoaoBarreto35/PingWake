@@ -2,6 +2,28 @@
 
 Todas as alterações relevantes do PingWake serão registradas neste arquivo.
 
+## [0.2.0] - 2026-07-07
+
+### Adicionado
+
+- notificações no Discord ao abrir e resolver incidentes;
+- tabela `notification_events` para rastrear envios e falhas;
+- endpoint administrativo `GET /api/v1/notifications`;
+- migration `20260707_0002`;
+- testes de envio e falha do webhook;
+- execução automática das migrations no início do container.
+
+### Corrigido
+
+- esquemas de autenticação do Swagger separados entre chave administrativa e chave do Cron;
+- comparação das chaves usando `compare_digest`.
+
+### Segurança
+
+- URL do webhook tratada como segredo;
+- erros de notificação não expõem o token do Discord;
+- indisponibilidade do Discord não desfaz checks nem incidentes.
+
 ## [0.1.0] - 2026-07-07
 
 ### Adicionado

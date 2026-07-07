@@ -10,6 +10,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.db.models.monitoring_target import MonitoringTarget
+    from app.db.models.notification_event import NotificationEvent
 
 
 def utc_now() -> datetime:
@@ -61,3 +62,6 @@ class Incident(Base):
     )
 
     target: Mapped["MonitoringTarget"] = relationship(back_populates="incidents")
+    notification_events: Mapped[list["NotificationEvent"]] = relationship(
+        back_populates="incident", cascade="all, delete-orphan"
+    )

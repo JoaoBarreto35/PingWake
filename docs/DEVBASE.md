@@ -8,15 +8,16 @@
 - **Finalidade:** Uso pessoal + Portfólio
 - **Status:** Em desenvolvimento
 - **Prioridade:** Alta
-- **Fase atual:** MVP funcional inicial
+- **Fase atual:** MVP publicado, automatizado e com notificações
 - **Horas registradas:** preencher conforme execução
-- **Próxima ação:** criar o banco PostgreSQL no Neon, preencher o `.env`, executar as migrations e validar o CRUD no Swagger
-- **Bloqueio atual:** banco Neon e deploy ainda não configurados
+- **Próxima ação:** validar abertura e resolução de incidente com alerta no Discord
+- **Bloqueio atual:** nenhum
 
 ## Objetivo
 
 Monitorar periodicamente APIs, sites e bancos de dados, manter serviços selecionados
-ativos, registrar latência e histórico de disponibilidade e gerenciar incidentes.
+ativos, registrar latência e histórico de disponibilidade, gerenciar incidentes e avisar
+quando um serviço fica indisponível ou se recupera.
 
 ## Regras importantes
 
@@ -25,6 +26,8 @@ ativos, registrar latência e histórico de disponibilidade e gerenciar incident
 - toda chamada possui timeout;
 - três falhas consecutivas abrem incidente;
 - dois sucessos consecutivos resolvem incidente;
+- alertas são enviados somente na abertura e na resolução;
+- falha no Discord não interrompe o monitoramento;
 - segredos ficam somente em variáveis de ambiente;
 - o endpoint do Cron é protegido por uma chave própria;
 - redes privadas são bloqueadas por padrão;
@@ -34,10 +37,8 @@ ativos, registrar latência e histórico de disponibilidade e gerenciar incident
 ## Problemas conhecidos
 
 - APIs antigas podem não possuir `/health/live` e `/health/ready`;
-- banco Neon ainda precisa ser criado;
-- backend ainda precisa ser publicado;
-- Cron externo ainda precisa ser escolhido e configurado;
-- integração com o DevBase pertence a uma fase posterior.
+- monitor específico de atividade de banco ainda não foi implementado;
+- integração visual com o DevBase pertence a uma fase posterior.
 
 ## Estrutura técnica
 
@@ -47,15 +48,22 @@ ativos, registrar latência e histórico de disponibilidade e gerenciar incident
 - FastAPI;
 - Uvicorn;
 - HTTPX assíncrono;
-- Pydantic Settings.
+- Pydantic Settings;
+- deploy no Render.
 
 ### Banco
 
 - PostgreSQL;
-- Neon como provedor recomendado;
+- Neon;
 - SQLAlchemy assíncrono;
 - asyncpg;
 - Alembic.
+
+### Automação e notificações
+
+- cron-job.org chamando `POST /internal/checks/run-due`;
+- webhook do Discord;
+- logs em `notification_events`.
 
 ### Qualidade e infraestrutura
 
@@ -71,21 +79,29 @@ ativos, registrar latência e histórico de disponibilidade e gerenciar incident
 
 - Categoria: Backend / API;
 - tecnologia: Python + FastAPI;
-- status: desenvolvimento;
-- repositório: `pingwake`;
+- status: publicado;
+- repositório: `PingWake`;
 - health check: `/health/live` e `/health/ready`;
-- deploy: pendente.
+- deploy: Render.
 
 ### Banco PingWake
 
 - Categoria: Banco de dados;
 - tecnologia: PostgreSQL;
 - provedor: Neon;
-- status: pendente de criação;
+- status: ativo;
 - migrations: Alembic.
 
 ### Cron externo
 
 - Categoria: Automação / Agendamento;
+- serviço: cron-job.org;
 - função: chamar `POST /internal/checks/run-due`;
-- status: pendente de definição.
+- status: ativo.
+
+### Alertas
+
+- Categoria: Integração / Notificação;
+- serviço: Discord Webhook;
+- eventos: incidente aberto e incidente resolvido;
+- status: em validação.

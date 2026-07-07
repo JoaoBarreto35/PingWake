@@ -10,8 +10,8 @@ o DevBase será integrado por API.
 
 ## Estado atual
 
-**Versão:** 0.1.0  
-**Fase:** MVP funcional inicial  
+**Versão:** 0.2.0  
+**Fase:** MVP publicado, automatizado e com alertas  
 **Banco recomendado:** Neon PostgreSQL  
 **Frontend:** não necessário no MVP
 
@@ -26,6 +26,8 @@ o DevBase será integrado por API.
 - persistência do histórico;
 - abertura de incidente após falhas consecutivas;
 - resolução automática após recuperações consecutivas;
+- notificações no Discord na abertura e resolução de incidentes;
+- histórico persistente das tentativas de notificação;
 - bloqueio de redes privadas e locais para reduzir risco de SSRF;
 - chaves separadas para administração e Cron;
 - migrations com Alembic;
@@ -44,6 +46,8 @@ PingWake /internal/checks/run-due
     +--> HTTP checks concorrentes
     +--> check_runs
     +--> incidents
+    +--> notification_events
+    +--> Discord webhook
     |
     v
 Neon PostgreSQL
@@ -170,6 +174,22 @@ curl -X POST "http://localhost:8000/internal/checks/run-due" \
   -H "X-PingWake-Cron-Key: sua-chave-do-cron"
 ```
 
+## Notificações no Discord
+
+Quando `NOTIFICATIONS_ENABLED=true`, o PingWake envia uma mensagem somente quando:
+
+- o limite de falhas consecutivas abre um incidente;
+- o limite de sucessos consecutivos resolve um incidente.
+
+As tentativas ficam disponíveis em:
+
+```http
+GET /api/v1/notifications
+```
+
+O webhook é um segredo e nunca deve ser versionado. Uma falha do Discord não desfaz o
+check, não altera o incidente e não interrompe as próximas verificações.
+
 ## Política inicial de incidentes
 
 - 3 falhas consecutivas: abre incidente;
@@ -213,11 +233,11 @@ docker compose up --build
 - [x] histórico de verificações;
 - [x] ciclo básico de incidentes;
 - [x] endpoint para Cron;
-- [ ] deploy do backend;
-- [ ] configuração do Cron externo;
+- [x] deploy do backend;
+- [x] configuração do Cron externo;
 - [ ] integração com o DevBase;
 - [ ] monitor específico para atividade de banco;
-- [ ] notificações;
+- [x] notificações no Discord;
 - [ ] métricas e gráficos.
 
 ## Licença

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     app_name: str = "PingWake"
     app_env: str = "development"
-    app_version: str = "0.1.0"
+    app_version: str = "0.2.0"
     log_level: str = "INFO"
     docs_enabled: bool = True
 
@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     default_timeout_seconds: int = Field(default=10, ge=1, le=120)
     failures_to_open_incident: int = Field(default=3, ge=1, le=20)
     successes_to_resolve_incident: int = Field(default=2, ge=1, le=20)
+
+    notifications_enabled: bool = False
+    discord_webhook_url: SecretStr | None = None
+    notification_timeout_seconds: int = Field(default=10, ge=1, le=60)
 
     allow_private_targets: bool = False
     allowed_target_hosts: str = ""
@@ -64,6 +68,25 @@ class Settings(BaseSettings):
                 raise ValueError("PINGWAKE_API_KEY must be changed in production.")
             if self.pingwake_cron_key.get_secret_value() in forbidden:
                 raise ValueError("PINGWAKE_CRON_KEY must be changed in production.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_notification_configuration(self) -> "Settings":
+        if not self.notifications_enabled:
+            return self
+
+        if self.discord_webhook_url is None:
+            raise ValueError(
+                "DISCORD_WEBHOOK_URL is required when NOTIFICATIONS_ENABLED is true."
+            )
+
+        webhook_url = self.discord_webhook_url.get_secret_value().strip()
+        allowed_prefixes = (
+            "https://discord.com/api/webhooks/",
+            "https://discordapp.com/api/webhooks/",
+        )
+        if not webhook_url.startswith(allowed_prefixes):
+            raise ValueError("DISCORD_WEBHOOK_URL must be a valid Discord webhook URL.")
         return self
 
     @property

@@ -1,0 +1,39 @@
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pingwake
+      POSTGRES_USER: pingwake
+      POSTGRES_PASSWORD: pingwake
+    ports:
+      - "5432:5432"
+    volumes:
+      - pingwake_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pingwake -d pingwake"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://pingwake:pingwake@database:5432/pingwake
+      PINGWAKE_API_KEY: local-development-api-key-change-me
+      PINGWAKE_CRON_KEY: local-development-cron-key-change-me
+      DOCS_ENABLED: "true"
+    ports:
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./app:/app/app
+      - ./migrations:/app/migrations
+
+volumes:
+  pingwake_postgres_data:

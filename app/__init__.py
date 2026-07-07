@@ -1,0 +1,1 @@
+"""PingWake application package."""

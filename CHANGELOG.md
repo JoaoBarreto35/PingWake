@@ -2,6 +2,26 @@
 
 Todas as alterações relevantes do PingWake serão registradas neste arquivo.
 
+## [0.5.0] - 2026-07-08
+
+### Adicionado
+
+- status operacional `stale` para checks atrasados;
+- classificação `degraded` por latência;
+- limites de latência, falha e recuperação por target;
+- retry automático das notificações do Discord;
+- reenvio manual de notificação pela API;
+- tabela `scheduler_runs` e watchdog do Cron;
+- endpoint `GET /api/v1/system/status`;
+- retenção automática de checks, notificações e execuções do scheduler;
+- migration `20260708_0004`;
+- testes de stale, degradação e retry.
+
+### Corrigido
+
+- uma falha temporária do Discord não perde mais o alerta de abertura ou recuperação;
+- o DevBase não recebe mais um estado saudável antigo como se ainda fosse atual.
+
 ## [0.4.0] - 2026-07-08
 
 ### Adicionado

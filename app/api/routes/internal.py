@@ -15,4 +15,4 @@ router = APIRouter(
 async def run_due_checks() -> BatchCheckResponse:
     runner = CheckRunner()
     result = await runner.run_due_targets()
-    return BatchCheckResponse(**result)
+    return BatchCheckResponse.model_validate(result)

@@ -83,6 +83,9 @@ class MonitoringTarget(Base):
     expected_status_code: Mapped[int] = mapped_column(Integer, nullable=False, default=200)
     interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+    degraded_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    failure_threshold: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    recovery_threshold: Mapped[int | None] = mapped_column(Integer, nullable=True)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     request_headers_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)

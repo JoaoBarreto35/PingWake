@@ -35,6 +35,17 @@ class CheckStatus(StrEnum):
     CONFIGURATION_ERROR = "configuration_error"
 
 
+class OperationalStatus(StrEnum):
+    PENDING = "pending"
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    TIMEOUT = "timeout"
+    CONFIGURATION_ERROR = "configuration_error"
+    STALE = "stale"
+    DISABLED = "disabled"
+
+
 class IncidentStatus(StrEnum):
     OPEN = "open"
     ACKNOWLEDGED = "acknowledged"
@@ -51,5 +62,14 @@ class NotificationChannel(StrEnum):
 
 
 class NotificationStatus(StrEnum):
+    PENDING = "pending"
+    RETRYING = "retrying"
     SENT = "sent"
+    FAILED = "failed"
+
+
+class SchedulerRunStatus(StrEnum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    PARTIAL = "partial"
     FAILED = "failed"

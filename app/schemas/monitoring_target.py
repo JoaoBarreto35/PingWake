@@ -80,6 +80,9 @@ class MonitoringTargetBase(BaseModel):
     expected_status_code: int = Field(default=200, ge=100, le=599)
     interval_minutes: int = Field(default=30, ge=1, le=10080)
     timeout_seconds: int = Field(default=10, ge=1, le=120)
+    degraded_latency_ms: int | None = Field(default=None, ge=100, le=120000)
+    failure_threshold: int | None = Field(default=None, ge=1, le=20)
+    recovery_threshold: int | None = Field(default=None, ge=1, le=20)
     enabled: bool = True
 
     @field_validator("url")
@@ -127,6 +130,9 @@ class MonitoringTargetUpdate(BaseModel):
     expected_status_code: int | None = Field(default=None, ge=100, le=599)
     interval_minutes: int | None = Field(default=None, ge=1, le=10080)
     timeout_seconds: int | None = Field(default=None, ge=1, le=120)
+    degraded_latency_ms: int | None = Field(default=None, ge=100, le=120000)
+    failure_threshold: int | None = Field(default=None, ge=1, le=20)
+    recovery_threshold: int | None = Field(default=None, ge=1, le=20)
     enabled: bool | None = None
     request_headers: dict[str, str] | None = Field(
         default=None,

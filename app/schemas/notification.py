@@ -16,5 +16,9 @@ class NotificationEventResponse(BaseModel):
     channel: NotificationChannel
     status: NotificationStatus
     sent_at: datetime | None
+    attempt_count: int
+    max_attempts: int
+    last_attempt_at: datetime | None
+    next_retry_at: datetime | None
     error_message: str | None
     created_at: datetime

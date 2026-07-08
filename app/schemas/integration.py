@@ -3,14 +3,15 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.core.enums import CheckStatus, Environment, MonitoringMode
+from app.core.enums import Environment, MonitoringMode, OperationalStatus
 
 
 class DevBaseTargetSummary(BaseModel):
     id: UUID
     name: str
     project_name: str | None
-    status: CheckStatus
+    status: OperationalStatus
+    raw_status: str
     enabled: bool
     monitoring_mode: MonitoringMode
     environment: Environment
@@ -23,3 +24,9 @@ class DevBaseTargetSummary(BaseModel):
     open_incident: bool
     incident_started_at: datetime | None
     incident_summary: str | None
+    is_stale: bool
+    stale_after_seconds: int
+    seconds_since_last_check: int | None
+    degraded_latency_ms: int
+    failure_threshold: int
+    recovery_threshold: int

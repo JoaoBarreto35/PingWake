@@ -10,7 +10,7 @@ consulta o estado dos targets por API.
 
 ## Estado atual
 
-**Versão:** 0.4.0  
+**Versão:** 0.5.0  
 **Fase:** MVP publicado, automatizado e com alertas  
 **Banco recomendado:** Neon PostgreSQL  
 **Frontend:** não necessário no MVP
@@ -28,6 +28,12 @@ consulta o estado dos targets por API.
 - resolução automática após recuperações consecutivas;
 - notificações no Discord na abertura e resolução de incidentes;
 - histórico persistente das tentativas de notificação;
+- retry automático de notificações com backoff configurável;
+- watchdog do Cron com histórico de execuções;
+- status `stale` para verificações atrasadas;
+- status `degraded` por limite de latência;
+- políticas de falha e recuperação por target;
+- retenção automática de checks, notificações e execuções do scheduler;
 - endpoint resumido e protegido para integração com o DevBase;
 - headers HTTP personalizados armazenados com criptografia Fernet;
 - body JSON opcional e criptografado para chamadas `POST`;
@@ -51,12 +57,32 @@ PingWake /internal/checks/run-due
     +--> headers/body descriptografados apenas em memória
     +--> check_runs
     +--> incidents
-    +--> notification_events
+    +--> notification_events + retries
+    +--> scheduler_runs + watchdog
+    +--> retenção automática
     +--> Discord webhook
     |
     v
 Neon PostgreSQL
 ```
+
+
+## Confiabilidade operacional
+
+A versão 0.5.0 separa o último resultado bruto do estado operacional exibido:
+
+- `healthy`: resposta correta dentro do limite de latência;
+- `degraded`: resposta correta, porém acima do limite configurado;
+- `unhealthy`, `timeout` ou `configuration_error`: falha real do check;
+- `stale`: o último check ficou antigo demais para ser confiável;
+- `disabled`: target desativado.
+
+Cada target pode definir `degraded_latency_ms`, `failure_threshold` e
+`recovery_threshold`. O endpoint `GET /api/v1/system/status` informa a última
+execução recebida do Cron e quantas notificações aguardam retry.
+
+Notificações com falha são tentadas novamente pelo próprio ciclo do Cron. O histórico
+permanece em um único registro, com contador de tentativas e próximo retry.
 
 ## Requisitos
 

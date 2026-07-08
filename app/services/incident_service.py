@@ -31,12 +31,21 @@ class IncidentService:
         repository = IncidentRepository(session)
         open_incident = await repository.get_open_by_target(target.id)
 
-        if check_run.status is CheckStatus.HEALTHY:
-            target.consecutive_successes += 1
+        if check_run.status in {CheckStatus.HEALTHY, CheckStatus.DEGRADED}:
             target.consecutive_failures = 0
+            if check_run.status is CheckStatus.HEALTHY:
+                target.consecutive_successes += 1
+            else:
+                target.consecutive_successes = 0
             if open_incident is not None:
                 open_incident.consecutive_successes = target.consecutive_successes
-                if target.consecutive_successes >= self.settings.successes_to_resolve_incident:
+                recovery_threshold = (
+                    target.recovery_threshold or self.settings.successes_to_resolve_incident
+                )
+                if (
+                    check_run.status is CheckStatus.HEALTHY
+                    and target.consecutive_successes >= recovery_threshold
+                ):
                     open_incident.status = IncidentStatus.RESOLVED
                     open_incident.resolved_at = datetime.now(UTC)
                     return IncidentTransition(
@@ -54,7 +63,8 @@ class IncidentService:
             open_incident.consecutive_successes = 0
             return None
 
-        if target.consecutive_failures < self.settings.failures_to_open_incident:
+        failure_threshold = target.failure_threshold or self.settings.failures_to_open_incident
+        if target.consecutive_failures < failure_threshold:
             return None
 
         recent_failures_statement = (

@@ -60,20 +60,32 @@ class HttpChecker:
 
             latency_ms = round((perf_counter() - start_counter) * 1000)
             finished_at = datetime.now(UTC)
-            check_status = (
-                CheckStatus.HEALTHY
-                if response.status_code == target.expected_status_code
-                else CheckStatus.UNHEALTHY
-            )
+            if response.status_code != target.expected_status_code:
+                check_status = CheckStatus.UNHEALTHY
+            else:
+                degraded_limit = (
+                    target.degraded_latency_ms or self.settings.default_degraded_latency_ms
+                )
+                check_status = (
+                    CheckStatus.DEGRADED if latency_ms >= degraded_limit else CheckStatus.HEALTHY
+                )
             return HttpCheckResult(
                 status=check_status,
                 http_status_code=response.status_code,
                 latency_ms=latency_ms,
                 started_at=started_at,
                 finished_at=finished_at,
-                error_type=None if check_status is CheckStatus.HEALTHY else "UnexpectedStatusCode",
+                error_type=(
+                    "HighLatency"
+                    if check_status is CheckStatus.DEGRADED
+                    else None
+                    if check_status is CheckStatus.HEALTHY
+                    else "UnexpectedStatusCode"
+                ),
                 error_message=(
-                    None
+                    f"Latency {latency_ms} ms reached the degraded limit of {degraded_limit} ms."
+                    if check_status is CheckStatus.DEGRADED
+                    else None
                     if check_status is CheckStatus.HEALTHY
                     else f"Expected {target.expected_status_code}, received {response.status_code}."
                 ),

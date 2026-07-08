@@ -112,6 +112,8 @@ async def test_discord_failure_is_logged_without_raising(session: AsyncSession) 
     event = await service.notify_incident_transition(session, target, check_run, transition)
 
     assert event is not None
-    assert event.status is NotificationStatus.FAILED
+    assert event.status is NotificationStatus.RETRYING
     assert event.sent_at is None
     assert event.error_message == "Discord returned HTTP 500."
+    assert event.attempt_count == 1
+    assert event.next_retry_at is not None

@@ -1,12 +1,13 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db, require_api_key
 from app.core.enums import NotificationEventType, NotificationStatus
 from app.repositories.notification_event_repository import NotificationEventRepository
 from app.schemas.notification import NotificationEventResponse
+from app.services.notification_service import NotificationService
 
 router = APIRouter(
     prefix="/api/v1/notifications",
@@ -31,3 +32,17 @@ async def list_notification_events(
         limit=limit,
     )
     return [NotificationEventResponse.model_validate(event) for event in events]
+
+
+@router.post("/{notification_id}/retry", response_model=NotificationEventResponse)
+async def retry_notification(
+    notification_id: UUID,
+    session: AsyncSession = Depends(get_db),
+) -> NotificationEventResponse:
+    event = await NotificationService().retry_event(session, notification_id, force=True)
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification event not found.",
+        )
+    return NotificationEventResponse.model_validate(event)

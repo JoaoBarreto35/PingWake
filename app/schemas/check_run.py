@@ -24,7 +24,12 @@ class CheckRunResponse(BaseModel):
 
 
 class BatchCheckResponse(BaseModel):
+    scheduler_run_id: str
     selected: int = Field(ge=0)
     completed: int = Field(ge=0)
     healthy: int = Field(ge=0)
+    degraded: int = Field(ge=0)
     failed: int = Field(ge=0)
+    retried_notifications: int = Field(ge=0)
+    pruned_check_runs: int = Field(ge=0)
+    pruned_notifications: int = Field(ge=0)

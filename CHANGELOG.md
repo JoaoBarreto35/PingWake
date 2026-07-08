@@ -2,6 +2,20 @@
 
 Todas as alterações relevantes do PingWake serão registradas neste arquivo.
 
+## [0.3.0] - 2026-07-08
+
+### Adicionado
+
+- endpoint `GET /api/v1/integrations/devbase/targets/{target_id}`;
+- resposta resumida com status, latência, HTTP, contadores e incidente aberto;
+- testes de autenticação e contrato da integração;
+- compatibilidade com a integração de leitura do DevBase 4.1.0.
+
+### Segurança
+
+- endpoint protegido pela chave administrativa existente;
+- nenhuma credencial ou corpo de resposta é exposto ao DevBase.
+
 ## [0.2.0] - 2026-07-07
 
 ### Adicionado

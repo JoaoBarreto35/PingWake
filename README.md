@@ -5,12 +5,12 @@ desenvolvido com Python, FastAPI e PostgreSQL.
 
 O PingWake é executado por um Cron externo, verifica os destinos pendentes, mede a
 latência, registra o histórico e gerencia incidentes automaticamente. O projeto não
-possui frontend no MVP: o Swagger funciona como interface administrativa e, no futuro,
-o DevBase será integrado por API.
+possui frontend no MVP: o Swagger funciona como interface administrativa e o DevBase
+consulta o estado dos targets por API.
 
 ## Estado atual
 
-**Versão:** 0.2.0  
+**Versão:** 0.3.0  
 **Fase:** MVP publicado, automatizado e com alertas  
 **Banco recomendado:** Neon PostgreSQL  
 **Frontend:** não necessário no MVP
@@ -28,6 +28,7 @@ o DevBase será integrado por API.
 - resolução automática após recuperações consecutivas;
 - notificações no Discord na abertura e resolução de incidentes;
 - histórico persistente das tentativas de notificação;
+- endpoint resumido e protegido para integração com o DevBase;
 - bloqueio de redes privadas e locais para reduzir risco de SSRF;
 - chaves separadas para administração e Cron;
 - migrations com Alembic;
@@ -174,6 +175,18 @@ curl -X POST "http://localhost:8000/internal/checks/run-due" \
   -H "X-PingWake-Cron-Key: sua-chave-do-cron"
 ```
 
+
+## Integração com o DevBase
+
+O endpoint otimizado abaixo reúne target, último check e incidente aberto em uma única resposta:
+
+```http
+GET /api/v1/integrations/devbase/targets/{target_id}
+X-PingWake-Key: sua-chave-administrativa
+```
+
+Ele não altera targets e não expõe credenciais. O DevBase armazena apenas o `target_id`.
+
 ## Notificações no Discord
 
 Quando `NOTIFICATIONS_ENABLED=true`, o PingWake envia uma mensagem somente quando:
@@ -235,7 +248,7 @@ docker compose up --build
 - [x] endpoint para Cron;
 - [x] deploy do backend;
 - [x] configuração do Cron externo;
-- [ ] integração com o DevBase;
+- [x] integração inicial de leitura com o DevBase;
 - [ ] monitor específico para atividade de banco;
 - [x] notificações no Discord;
 - [ ] métricas e gráficos.

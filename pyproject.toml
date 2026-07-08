@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pingwake"
-version = "0.2.0"
+version = "0.3.0"
 description = "Personal monitoring and keep-alive service for APIs and databases."
 readme = "README.md"
 requires-python = ">=3.12"

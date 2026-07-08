@@ -105,3 +105,14 @@ quando um serviço fica indisponível ou se recupera.
 - serviço: Discord Webhook;
 - eventos: incidente aberto e incidente resolvido;
 - status: em validação.
+
+
+## Integração implementada na versão 0.3.0
+
+O DevBase 4.1.0 consulta:
+
+```http
+GET /api/v1/integrations/devbase/targets/{target_id}
+```
+
+O endpoint usa `X-PingWake-Key`, é somente leitura e retorna o estado atual, o último check e o incidente aberto em uma única chamada.

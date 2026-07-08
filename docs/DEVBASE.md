@@ -8,9 +8,9 @@
 - **Finalidade:** Uso pessoal + Portfólio
 - **Status:** Em desenvolvimento
 - **Prioridade:** Alta
-- **Fase atual:** MVP publicado, automatizado e com notificações
+- **Fase atual:** MVP publicado, automatizado, com notificações e requests autenticados
 - **Horas registradas:** preencher conforme execução
-- **Próxima ação:** validar abertura e resolução de incidente com alerta no Discord
+- **Próxima ação:** cadastrar e validar os projetos Supabase por RPC
 - **Bloqueio atual:** nenhum
 
 ## Objetivo
@@ -28,7 +28,8 @@ quando um serviço fica indisponível ou se recupera.
 - dois sucessos consecutivos resolvem incidente;
 - alertas são enviados somente na abertura e na resolução;
 - falha no Discord não interrompe o monitoramento;
-- segredos ficam somente em variáveis de ambiente;
+- segredos globais ficam somente em variáveis de ambiente;
+- headers e bodies dos targets ficam criptografados no PostgreSQL;
 - o endpoint do Cron é protegido por uma chave própria;
 - redes privadas são bloqueadas por padrão;
 - respostas completas dos alvos não são armazenadas;
@@ -37,8 +38,8 @@ quando um serviço fica indisponível ou se recupera.
 ## Problemas conhecidos
 
 - APIs antigas podem não possuir `/health/live` e `/health/ready`;
-- monitor específico de atividade de banco ainda não foi implementado;
-- integração visual com o DevBase pertence a uma fase posterior.
+- APIs antigas podem exigir criação de uma função RPC ou endpoint de health;
+- o formulário atual do DevBase ainda não edita headers e body secretos.
 
 ## Estrutura técnica
 
@@ -99,6 +100,14 @@ quando um serviço fica indisponível ou se recupera.
 - função: chamar `POST /internal/checks/run-due`;
 - status: ativo.
 
+### Monitoramento Supabase
+
+- Categoria: Banco de dados / API;
+- método: RPC pela Data API;
+- autenticação: publishable key no header `apikey`;
+- armazenamento: header e body criptografados;
+- status: implementado.
+
 ### Alertas
 
 - Categoria: Integração / Notificação;
@@ -107,7 +116,7 @@ quando um serviço fica indisponível ou se recupera.
 - status: em validação.
 
 
-## Integração implementada na versão 0.3.0
+## Integração implementada
 
 O DevBase 4.1.0 consulta:
 

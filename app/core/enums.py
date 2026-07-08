@@ -23,6 +23,7 @@ class Environment(StrEnum):
 class HttpMethod(StrEnum):
     GET = "GET"
     HEAD = "HEAD"
+    POST = "POST"
 
 
 class CheckStatus(StrEnum):

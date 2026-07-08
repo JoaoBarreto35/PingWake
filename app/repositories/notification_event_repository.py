@@ -27,9 +27,7 @@ class NotificationEventRepository:
         limit: int = 100,
     ) -> list[NotificationEvent]:
         statement = (
-            select(NotificationEvent)
-            .order_by(NotificationEvent.created_at.desc())
-            .limit(limit)
+            select(NotificationEvent).order_by(NotificationEvent.created_at.desc()).limit(limit)
         )
         if target_id is not None:
             statement = statement.where(NotificationEvent.target_id == target_id)

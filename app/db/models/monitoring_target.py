@@ -85,6 +85,11 @@ class MonitoringTarget(Base):
     timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
+    request_headers_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    request_body_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    has_custom_headers: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    has_request_body: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     last_status: Mapped[CheckStatus] = mapped_column(
         Enum(
             CheckStatus,

@@ -5,6 +5,10 @@ os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("PINGWAKE_API_KEY", "test-api-key-with-enough-length")
 os.environ.setdefault("PINGWAKE_CRON_KEY", "test-cron-key-with-enough-length")
+os.environ.setdefault(
+    "PINGWAKE_ENCRYPTION_KEY",
+    "ogrz8oyDPaFypfjqBufjOyBlUlCG3Sl9I2eB0xLu8_E=",
+)
 
 import pytest
 from httpx import ASGITransport, AsyncClient

@@ -15,13 +15,14 @@ class Settings(BaseSettings):
 
     app_name: str = "PingWake"
     app_env: str = "development"
-    app_version: str = "0.3.0"
+    app_version: str = "0.4.0"
     log_level: str = "INFO"
     docs_enabled: bool = True
 
     database_url: str = ""
     pingwake_api_key: SecretStr = SecretStr("development-api-key-change-me")
     pingwake_cron_key: SecretStr = SecretStr("development-cron-key-change-me")
+    pingwake_encryption_key: SecretStr | None = None
 
     max_concurrency: int = Field(default=10, ge=1, le=100)
     default_timeout_seconds: int = Field(default=10, ge=1, le=120)
@@ -71,14 +72,30 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def validate_encryption_configuration(self) -> "Settings":
+        if self.pingwake_encryption_key is None:
+            return self
+
+        value = self.pingwake_encryption_key.get_secret_value().strip()
+        if not value:
+            self.pingwake_encryption_key = None
+            return self
+
+        try:
+            from cryptography.fernet import Fernet
+
+            Fernet(value.encode("ascii"))
+        except (ValueError, UnicodeEncodeError) as exc:
+            raise ValueError("PINGWAKE_ENCRYPTION_KEY must be a valid Fernet key.") from exc
+        return self
+
+    @model_validator(mode="after")
     def validate_notification_configuration(self) -> "Settings":
         if not self.notifications_enabled:
             return self
 
         if self.discord_webhook_url is None:
-            raise ValueError(
-                "DISCORD_WEBHOOK_URL is required when NOTIFICATIONS_ENABLED is true."
-            )
+            raise ValueError("DISCORD_WEBHOOK_URL is required when NOTIFICATIONS_ENABLED is true.")
 
         webhook_url = self.discord_webhook_url.get_secret_value().strip()
         allowed_prefixes = (

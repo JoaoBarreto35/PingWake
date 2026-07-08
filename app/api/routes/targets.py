@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db, require_api_key
+from app.core.crypto import SecretConfigurationError
 from app.repositories.monitoring_target_repository import MonitoringTargetRepository
 from app.schemas.monitoring_target import (
     MonitoringTargetCreate,
@@ -24,7 +25,13 @@ async def create_target(
     session: AsyncSession = Depends(get_db),
 ) -> MonitoringTargetResponse:
     repository = MonitoringTargetRepository(session)
-    target = await repository.create(payload)
+    try:
+        target = await repository.create(payload)
+    except SecretConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
     await session.commit()
     await session.refresh(target)
     return MonitoringTargetResponse.model_validate(target)
@@ -63,7 +70,13 @@ async def update_target(
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target not found.")
 
-    await repository.update(target, payload)
+    try:
+        await repository.update(target, payload)
+    except SecretConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
     await session.commit()
     await session.refresh(target)
     return MonitoringTargetResponse.model_validate(target)

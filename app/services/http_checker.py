@@ -5,9 +5,11 @@ from time import perf_counter
 import httpx
 
 from app.core.config import Settings, get_settings
+from app.core.crypto import SecretConfigurationError
 from app.core.enums import CheckStatus
 from app.core.security import UnsafeTargetError, validate_target_url_runtime
 from app.db.models.monitoring_target import MonitoringTarget
+from app.services.request_config_service import RequestConfigService
 
 
 @dataclass(slots=True)
@@ -24,6 +26,7 @@ class HttpCheckResult:
 class HttpChecker:
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
+        self.request_config = RequestConfigService(self.settings)
 
     async def check(self, target: MonitoringTarget) -> HttpCheckResult:
         started_at = datetime.now(UTC)
@@ -31,13 +34,29 @@ class HttpChecker:
 
         try:
             await validate_target_url_runtime(target.url, self.settings)
+            custom_headers = self.request_config.get_headers(target)
+            request_body = self.request_config.get_body(target)
+
+            headers = {"User-Agent": f"PingWake/{self.settings.app_version}"}
+            headers.update(custom_headers)
             timeout = httpx.Timeout(float(target.timeout_seconds))
             async with httpx.AsyncClient(
                 timeout=timeout,
                 follow_redirects=False,
-                headers={"User-Agent": f"PingWake/{self.settings.app_version}"},
             ) as client:
-                response = await client.request(target.http_method.value, target.url)
+                if target.has_request_body:
+                    response = await client.request(
+                        target.http_method.value,
+                        target.url,
+                        headers=headers,
+                        json=request_body,
+                    )
+                else:
+                    response = await client.request(
+                        target.http_method.value,
+                        target.url,
+                        headers=headers,
+                    )
 
             latency_ms = round((perf_counter() - start_counter) * 1000)
             finished_at = datetime.now(UTC)
@@ -66,6 +85,14 @@ class HttpChecker:
                 CheckStatus.CONFIGURATION_ERROR,
                 type(exc).__name__,
                 str(exc),
+            )
+        except (SecretConfigurationError, ValueError) as exc:
+            return self._error_result(
+                started_at,
+                start_counter,
+                CheckStatus.CONFIGURATION_ERROR,
+                type(exc).__name__,
+                str(exc)[:500],
             )
         except httpx.TimeoutException as exc:
             return self._error_result(

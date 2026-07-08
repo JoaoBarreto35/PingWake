@@ -2,6 +2,27 @@
 
 Todas as alterações relevantes do PingWake serão registradas neste arquivo.
 
+## [0.4.0] - 2026-07-08
+
+### Adicionado
+
+- suporte ao método HTTP `POST`;
+- headers personalizados por target;
+- body JSON opcional por target;
+- criptografia Fernet dos headers e bodies antes da persistência;
+- indicadores públicos `has_custom_headers` e `has_request_body`;
+- migration `20260708_0003`;
+- documentação e exemplo completo para Supabase RPC;
+- testes de criptografia, redaction, atualização e envio HTTP.
+
+### Segurança
+
+- valores secretos não são retornados pelos endpoints administrativos;
+- proteção contra CRLF em headers;
+- bloqueio de headers gerenciados pelo cliente HTTP;
+- limites de quantidade e tamanho para headers e body;
+- falha segura como `configuration_error` quando a chave não permite descriptografar.
+
 ## [0.3.0] - 2026-07-08
 
 ### Adicionado

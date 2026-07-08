@@ -8,16 +8,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.monitoring_target import MonitoringTarget
 from app.schemas.monitoring_target import MonitoringTargetCreate, MonitoringTargetUpdate
+from app.services.request_config_service import RequestConfigService
 
 
 class MonitoringTargetRepository:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        request_config: RequestConfigService | None = None,
+    ) -> None:
         self.session = session
+        self.request_config = request_config or RequestConfigService()
 
     async def create(self, payload: MonitoringTargetCreate) -> MonitoringTarget:
-        data = payload.model_dump(mode="json")
+        data = payload.model_dump(
+            mode="json",
+            exclude={"request_headers", "request_body"},
+        )
         data["url"] = str(payload.url)
         target = MonitoringTarget(**data)
+        self.request_config.set_headers(target, payload.request_headers)
+        self.request_config.set_body(target, payload.request_body)
         self.session.add(target)
         await self.session.flush()
         return target
@@ -52,11 +63,21 @@ class MonitoringTargetRepository:
         target: MonitoringTarget,
         payload: MonitoringTargetUpdate,
     ) -> MonitoringTarget:
-        changes = payload.model_dump(exclude_unset=True, mode="json")
+        changes = payload.model_dump(
+            exclude_unset=True,
+            mode="json",
+            exclude={"request_headers", "request_body"},
+        )
         if payload.url is not None:
             changes["url"] = str(payload.url)
         for field_name, value in changes.items():
             setattr(target, field_name, value)
+
+        if "request_headers" in payload.model_fields_set:
+            self.request_config.set_headers(target, payload.request_headers)
+        if "request_body" in payload.model_fields_set:
+            self.request_config.set_body(target, payload.request_body)
+
         await self.session.flush()
         return target
 

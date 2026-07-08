@@ -10,7 +10,7 @@ consulta o estado dos targets por API.
 
 ## Estado atual
 
-**Versão:** 0.3.0  
+**Versão:** 0.4.0  
 **Fase:** MVP publicado, automatizado e com alertas  
 **Banco recomendado:** Neon PostgreSQL  
 **Frontend:** não necessário no MVP
@@ -29,6 +29,9 @@ consulta o estado dos targets por API.
 - notificações no Discord na abertura e resolução de incidentes;
 - histórico persistente das tentativas de notificação;
 - endpoint resumido e protegido para integração com o DevBase;
+- headers HTTP personalizados armazenados com criptografia Fernet;
+- body JSON opcional e criptografado para chamadas `POST`;
+- suporte a monitoramento de RPCs e APIs autenticadas, incluindo Supabase;
 - bloqueio de redes privadas e locais para reduzir risco de SSRF;
 - chaves separadas para administração e Cron;
 - migrations com Alembic;
@@ -45,6 +48,7 @@ PingWake /internal/checks/run-due
     |
     +--> monitoring_targets
     +--> HTTP checks concorrentes
+    +--> headers/body descriptografados apenas em memória
     +--> check_runs
     +--> incidents
     +--> notification_events
@@ -90,7 +94,7 @@ pip install -e ".[dev]"
 
 ### 3. Configure as variáveis
 
-Copie `.env.example` para `.env` e informe a conexão do banco e duas chaves diferentes.
+Copie `.env.example` para `.env` e informe a conexão do banco e chaves diferentes. Para usar headers ou body nos targets, gere também uma chave Fernet de criptografia.
 
 ```bash
 cp .env.example .env
@@ -105,6 +109,16 @@ Copy-Item .env.example .env
 O Neon fornece normalmente uma URL iniciada por `postgresql://`. O PingWake adapta
 automaticamente a URL para o driver assíncrono e remove o parâmetro `channel_binding`,
 que não é utilizado pelo `asyncpg`.
+
+Gere a chave de criptografia uma única vez:
+
+```powershell
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Salve o resultado em `PINGWAKE_ENCRYPTION_KEY` localmente e no Render. Não troque essa
+chave enquanto existirem targets com configuração criptografada, pois os dados antigos
+deixariam de poder ser descriptografados.
 
 ### 4. Execute as migrations
 
@@ -160,6 +174,47 @@ curl -X POST "http://localhost:8000/api/v1/targets" \
     "enabled": true
   }'
 ```
+
+
+### Criar um target Supabase com header e body
+
+Para uma função RPC pública chamada `ping_health`, use `POST`, o header `apikey` com a
+publishable key e body `{}`. Os valores são criptografados antes de chegar ao banco e não
+são devolvidos pela API:
+
+```json
+{
+  "name": "Meu projeto — Supabase Database",
+  "description": "Valida Data API e PostgreSQL por RPC",
+  "project_name": "Meu projeto",
+  "target_type": "database",
+  "monitoring_mode": "database_activity",
+  "environment": "production",
+  "provider": "Supabase",
+  "url": "https://SEU_PROJECT_REF.supabase.co/rest/v1/rpc/ping_health",
+  "http_method": "POST",
+  "expected_status_code": 200,
+  "interval_minutes": 720,
+  "timeout_seconds": 20,
+  "enabled": true,
+  "request_headers": {
+    "apikey": "sb_publishable_..."
+  },
+  "request_body": {}
+}
+```
+
+Na resposta, aparecem somente:
+
+```json
+{
+  "has_custom_headers": true,
+  "has_request_body": true
+}
+```
+
+Para preservar headers/body ao editar, omita esses campos. Para removê-los, envie `null`.
+Veja `docs/SUPABASE_MONITORING.md` para o SQL e o passo a passo completo.
 
 ### Executar um destino manualmente
 
@@ -217,6 +272,9 @@ check, não altera o incidente e não interrompe as próximas verificações.
 - redes privadas, loopback, link-local e endereços reservados são bloqueados por padrão;
 - redirecionamentos HTTP não são seguidos;
 - corpos das respostas monitoradas não são persistidos;
+- headers e bodies dos requests são criptografados no banco e descriptografados apenas em memória;
+- as respostas da API nunca devolvem valores de headers ou body;
+- headers de transporte como `Host` e `Content-Length` não podem ser configurados;
 - habilite `ALLOW_PRIVATE_TARGETS=true` apenas em ambiente controlado.
 
 ## Desenvolvimento
@@ -249,7 +307,8 @@ docker compose up --build
 - [x] deploy do backend;
 - [x] configuração do Cron externo;
 - [x] integração inicial de leitura com o DevBase;
-- [ ] monitor específico para atividade de banco;
+- [x] monitor específico para atividade de banco;
+- [x] headers personalizados e body JSON criptografados;
 - [x] notificações no Discord;
 - [ ] métricas e gráficos.
 
